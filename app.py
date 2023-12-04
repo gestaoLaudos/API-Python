@@ -5,6 +5,7 @@ import boto3
 import os
 import requests
 from datetime import datetime
+import uuid
 
 s3 = boto3.client('s3')
 bucket_name = "cyclic-cute-school-uniform-boa-us-east-1"
@@ -60,10 +61,9 @@ def sign_pdf(input_pdf_path, output_pdf_path, private_key, certificate):
 @app.route('/sign', methods=['POST'])
 def sign_pdf_endpoint():
     try:
-        data = request.get_json()
-        pfx_file_url = data.get('pfx_file_url')
-        pfx_password = data.get('pfx_password')
-        pdf_url = data.get('pdf_url')
+        unique_id = uuid.uuid4()
+        local_pdf_file = f'/tmp/pdf_{unique_id}.pdf'
+        pfx_path = f'/tmp/pfx_{unique_id}.pfx'
 
         current_date_time = set_current_date_time()
         local_pdf_file = f'/tmp/pdf_{current_date_time}.pdf'
