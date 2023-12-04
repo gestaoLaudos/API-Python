@@ -1,0 +1,8 @@
+Flask 
+pyOpenSSL 
+requests 
+reportlab 
+boto3 
+endesive
+FPDF
+cryptography
