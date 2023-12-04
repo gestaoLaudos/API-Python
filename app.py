@@ -58,16 +58,20 @@ def sign_pdf(input_pdf_path, output_pdf_path, private_key, certificate):
         fp.write(datau)
         fp.write(datas)
 
+def generate_unique_filename(extension):
+    unique_filename = f'{uuid.uuid4()}{extension}'
+    return os.path.join(folder, unique_filename)
+
 @app.route('/sign', methods=['POST'])
 def sign_pdf_endpoint():
-    try:
-        unique_id = uuid.uuid4()
-        local_pdf_file = f'/tmp/pdf_{unique_id}.pdf'
-        pfx_path = f'/tmp/pfx_{unique_id}.pfx'
+       try:
+        data = request.get_json()
+        pfx_file_url = data.get('pfx_file_url')
+        pfx_password = data.get('pfx_password')
+        pdf_url = data.get('pdf_url')
 
-        current_date_time = set_current_date_time()
-        local_pdf_file = f'/tmp/pdf_{current_date_time}.pdf'
-        pfx_path = f'/tmp/pfx_{current_date_time}.pfx'
+        local_pdf_file = generate_unique_filename('.pdf')
+        pfx_path = generate_unique_filename('.pfx')
 
         os.makedirs(folder, exist_ok=True)
 
@@ -78,15 +82,19 @@ def sign_pdf_endpoint():
         sign_pdf(local_pdf_file, local_pdf_file, private_key, certificate)
 
         with open(local_pdf_file, 'rb') as f:
-            s3.put_object(Body=f.read(), Bucket=bucket_name, Key=local_pdf_file)
+            s3.put_object(Body=f.read(), Bucket=bucket_name, Key=os.path.basename(local_pdf_file))
 
         url = s3.generate_presigned_url(
             ClientMethod='get_object',
             Params={
                 'Bucket': bucket_name,
-                'Key': local_pdf_file
+                'Key': os.path.basename(local_pdf_file)
             }
         )
+
+        # Limpeza de arquivos temporários
+        os.remove(local_pdf_file)
+        os.remove(pfx_path)
 
         return jsonify({'message': 'PDF signed successfully!', 'url': url}), 200
     except Exception as e:
